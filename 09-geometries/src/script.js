@@ -14,7 +14,7 @@ const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
 
 // Object
-const S = 4, CLOUDS=4, R = 20, N = 50, M = 80
+const S = 7, CLOUDS=5, R = 20, N = 50, M = 120
 
 const sets = Array(S).fill().map(()=>[])
 const cloudPoints = Array(CLOUDS).fill().map(()=>[])
@@ -22,8 +22,11 @@ const innerPoints = []
 let currentSet = null, currentCloud = null
 const addToRandomSet = (pts, i, j) => {
     pts.forEach(p=>innerPoints.push(p))
-    if (currentSet == null || Math.random() < .4)
-        currentSet = sets[Math.floor(Math.random()*sets.length)]
+    if (currentSet == null || Math.random() < .1) {
+        currentSet = Math.random()<.2
+            ? sets[0]
+            : sets[Math.floor(Math.random()*(sets.length-1)*Math.max(0,1-1.3*i/N))+1]
+    }
     pts.forEach(p=>currentSet.push(p))
 
     if (Math.random() < .2) {
@@ -43,8 +46,8 @@ for (let i=0; i<N; i++) {
     const M1 = Math.floor(r1*M/R)
 
     for (let j=0; j<M0; j++) {
-        const theta0 = j*2*Math.PI/(M0-1)
-        const theta1 = (j+1)*2*Math.PI/(M0-1)
+        const theta0 = j*2*Math.PI/M0
+        const theta1 = (j+1)*2*Math.PI/M0
         if (i == N-1) {
             addToRandomSet([
                 r0*Math.sin(theta0), y0, r0*Math.cos(theta0),
@@ -52,7 +55,7 @@ for (let i=0; i<N; i++) {
                 0, R, 0
             ], i, j)
         } else {
-            const q = 2*Math.PI/(M1-1)
+            const q = 2*Math.PI/M1
             const theta2 = q*Math.floor(theta1/q+.0001)
             addToRandomSet([
                 r0*Math.sin(theta0), y0, r0*Math.cos(theta0),
@@ -61,9 +64,9 @@ for (let i=0; i<N; i++) {
             ], i, j)
         }
         if (i<N-1 && j<M1) {
-            const theta0 = j*2*Math.PI/(M1-1)
-            const theta1 = (j+1)*2*Math.PI/(M1-1)
-            const q = 2*Math.PI/(M0-1)
+            const theta0 = j*2*Math.PI/M1
+            const theta1 = (j+1)*2*Math.PI/M1
+            const q = 2*Math.PI/M0
             const theta2 = q*Math.floor(theta1/q-.0001)
             addToRandomSet([
                 r1*Math.sin(theta0), y1, r1*Math.cos(theta0),
@@ -85,6 +88,10 @@ const buildMeshes = sets => {
 
 const {materials, meshes} = buildMeshes(sets)
 materials[0].color = new THREE.Color(0xff1166)
+materials.slice(1).forEach((m,i)=>{
+    const c = 60//-4*i
+    m.color=new THREE.Color((c<<16) + (c<<8) + c)
+})
 const clouds = buildMeshes(cloudPoints)
 const cloudRotationOffset = clouds.meshes.map(()=>2*Math.PI*Math.random())
 clouds.meshes.forEach((m,i)=>{
@@ -92,11 +99,11 @@ clouds.meshes.forEach((m,i)=>{
     m.scale.set(s,s,s)
 })
 clouds.materials.forEach((m,i)=>{
-    const c = 50-15*i
-    m.color=new THREE.Color((c<<16) + ((1.1*c)<<8) + (1.2*c)|0)
+    const c = 80-30*i
+    m.color=new THREE.Color(((1.8*c)<<16) + ((1.7*c)<<8) + (1.5*c)|0)
 })
 const inner = buildMeshes([innerPoints])
-inner.meshes.forEach((m,i)=>(s=>m.scale.set(s,s,s))(.95))
+inner.meshes.forEach((m,i)=>(s=>m.scale.set(s,s,s))(.99))
 inner.materials.forEach((m,i)=>m.color=new THREE.Color(0x000000))
 
 // Sizes
@@ -122,8 +129,7 @@ window.addEventListener('resize', () =>
 
 // Camera
 const camera = new THREE.PerspectiveCamera(55, sizes.width / sizes.height, 0.1, 5000)
-camera.position.z = -40
-camera.position.y = .8*R/4
+camera.position.z = -37
 scene.add(camera)
 
 // Controls
@@ -131,7 +137,9 @@ const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 controls.enablePan = false
 controls.enableZoom = false
-controls.maxPolarAngle = Math.PI/2
+controls.maxPolarAngle = 1.1*Math.PI/2
+controls.autoRotate = true
+controls.autoRotateSpeed = -.3
 controls.target = new THREE.Vector3(0,1.1*R/2,0)
 
 // Renderer
@@ -147,7 +155,7 @@ const clock = new THREE.Clock()
 const rotQuant = 50
 const rotations = Array(meshes.length).fill(0)
 const rotateAway = (shell, i) => new Promise(resolve => {
-    const possibleRotations = Array(S+1).fill().map((x,j)=>rotations[i]+j-parseInt((S+1)/2)).filter(r=>!~rotations.indexOf(r))
+    const possibleRotations = Array(S+1).fill().map((x,j)=>rotations[i]+j-parseInt((S+1)/2))//.filter(r=>!~rotations.indexOf(r))
     const nextRot = possibleRotations[Math.floor(possibleRotations.length*Math.random())]
     const delta = Math.abs(nextRot-rotations[i])
     rotations[i] = nextRot
@@ -158,16 +166,17 @@ const rotateBack = (shell, i, rotation) => new Promise(resolve => {
     rotations[i] = rotation
     gsap.to(shell.rotation, {y:rotations[i]*2*Math.PI/rotQuant, duration:.1*delta, ease: 'none', onComplete: resolve})
 })
-const so = .04, si = .004, sc = .005
+const so = .015, si = .004, sc = .003
 const scaleIn=()=>new Promise(resolve=>meshes.forEach((m,i)=> gsap.to(m.scale, {x:1-si*i, y:1-si*i, z:1-si*i, duration:.4, ease:'none', onComplete:i?undefined:resolve})))
-const scaleOut=()=>new Promise(resolve=>meshes.forEach((m,i)=> gsap.to(m.scale, {x:1+so*i, y:1+so*i, z:1+so*i, duration:.2, onComplete:i?undefined:resolve})))
-const scaleCenter=()=>new Promise(resolve=>meshes.forEach((m,i)=> gsap.to(m.scale, {x:1+sc*i, y:1+sc*i, z:1+sc*i, duration:2, onComplete:i?undefined:resolve})))
+const scaleOut=()=>new Promise(resolve=>meshes.forEach((m,i)=> gsap.to(m.scale, {x:1+so*i*i, y:1+so*i*i, z:1+so*i*i, duration:.75, onComplete:i?undefined:resolve})))
+const scaleCenter=()=>new Promise(resolve=>meshes.forEach((m,i)=> gsap.to(m.scale, {x:1+sc*i, y:1+sc*i, z:1+sc*i, duration:.3, onComplete:i?undefined:resolve})))
 const animate = async () => {
     while (true) {
         await scaleCenter()
-        await new Promise(r=>setTimeout(r,1000))
+        await new Promise(r=>setTimeout(r,1250))
         await scaleOut()
-        for (let j=0; j<4; j++) {
+        const movement = Math.floor(3*Math.random())+1
+        for (let j=0; j<movement; j++) {
             for (let i=0; i<meshes.length; i++) {
                 await rotateAway(meshes[i], i)
             }
@@ -175,7 +184,7 @@ const animate = async () => {
         for (let i=0; i<meshes.length-1; i++) {
             await rotateBack(meshes[i], i, rotations[meshes.length-1])
         }
-        await scaleIn()
+        // await scaleIn()
     }
 }
 animate()
@@ -188,7 +197,7 @@ const tick = () =>
     controls.update()
 
     // update clouds
-    clouds.meshes.forEach((m,i)=> m.rotation.y = .01*elapsedTime / (i+1) + cloudRotationOffset[i])
+    clouds.meshes.forEach((m,i)=> m.rotation.y = .01*elapsedTime / (5*i+1) + cloudRotationOffset[i])
 
     // Render
     renderer.render(scene, camera)
