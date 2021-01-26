@@ -12,7 +12,7 @@ import { ImageUtils } from 'three'
  loadingManager.onProgress = (file, x, y) => console.log('onprogress', file, x, y)
 
 const textureLoader = new THREE.TextureLoader(loadingManager)
-const textures = Array(16).fill().map((x,i)=>textureLoader.load(`/textures/meat/${i+1}.jpg`))
+const textures = Array(16).fill().map((x,i)=>textureLoader.load(`./textures/meat/${i+1}.jpg`))
     .filter((x,i)=>!!~[15,4,7,8,10,13].indexOf(i))
     // .filter((x,i)=>!!~[0,1,2,3,6,9,11,14].indexOf(i))
 
