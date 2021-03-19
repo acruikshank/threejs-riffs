@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      background: #000;
+    }
+    canvas {
+      width: 1024px;
+      height: 1024px;
+    }
+  </style>
+  <script src="perlin.js"></script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <a id="download">download</a>
+</body>
+<script>
+
+
+
+
+
+
+
+
+
+function vadd(a,v) { return [a[0]+v[0], a[1]+v[1], a[2]+v[2]]; }
+function vsub(a,v) { return [a[0]-v[0], a[1]-v[1], a[2]-v[2]]; }
+function vscale(a,c) { return [a[0]*c, a[1]*c, a[2]*c]; }
+function vdot(a,v) { return a[0]*v[0] + a[1]*v[1] + a[2]*v[2]; }
+function vcross(a,v) { return [a[1]*v[2] - a[2]*v[1], a[2]*v[0] - a[0]*v[2], a[0]*v[1] - a[1]*v[0]]; }
+function vlength(v) { return Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]); }
+function vdist(a, v) { return vlength(vsub(a,v)); }
+function vnorm(v) { var l=vlength(v); return l > 0 ? [v[0]/l, v[1]/l, v[2]/l] : v; }
+function vinterp(a,b,c) { return vadd(a,vscale(vsub(b,a),c)); }
+
+const canvas = document.getElementById("c")
+const cw = canvas.width = 1024
+const ch = canvas.height = 1024
+const ctx = canvas.getContext('2d')
+
+const canvasData = ctx.getImageData(0, 0, cw, ch)
+const s=4/cw, o=.3
+// const f = (x,y) => noise.perlin2(s*x+o,s*y+o)
+const f = (x,y) => Math.sqrt(Math.max(0,1 - Math.sqrt((cw/2-x)*(cw/2-x) + (ch/2-y)*(ch/2-y))/(.5*cw)))
+for (let i=0; i<canvasData.width; i++) {
+  for (let j=0; j<canvasData.height; j++) {
+  // for (let j=0; j<1; j++) {
+    let idx = (i*canvasData.width + j)*4
+
+    let bw = f(i, j)
+
+    const delta = 1*s
+    const nscale = 100
+    let v1 = vsub([0,-delta,nscale*f(i,j-delta)],[0,delta,nscale*f(i,j+delta)])
+    let v2 = vsub([delta,0,nscale*f(i+delta,j)],[-delta,0,nscale*f(i-delta,j)])
+    let norm = vnorm(vcross(v1,v2))
+    // console.log(v1, v2, norm)
+
+    canvasData.data[idx] = Math.floor(255*(1+norm[0])/2)
+    canvasData.data[idx+1] = Math.floor(255*(1+norm[1])/2)
+    canvasData.data[idx+2] = Math.floor(255*(1+norm[2])/2)
+
+    // canvasData.data[idx] = Math.floor(255*bw)
+    // canvasData.data[idx+1] = Math.floor(255*bw)
+    // canvasData.data[idx+2] = Math.floor(255*bw)
+    canvasData.data[idx+3] = 255
+  }
+}
+ctx.putImageData(canvasData, 0, 0)
+
+// height2normal(canvas)
+
+const download = document.getElementById("download")
+download.setAttribute('href', canvas.toDataURL())
+</script>
+</html>
