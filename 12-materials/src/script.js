@@ -47,7 +47,7 @@ const textureLoader = new THREE.TextureLoader()
 
 const matrixTexture = textureLoader.load('./textures/matrix.png')
 matrixTexture.wrapS = matrixTexture.wrapT = THREE.RepeatWrapping
-const infillTexture = textureLoader.load('/textures/infill.png')
+const infillTexture = textureLoader.load('./textures/infill.png')
 infillTexture.wrapS = infillTexture.wrapT = THREE.RepeatWrapping
 
 /**
