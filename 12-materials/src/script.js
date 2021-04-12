@@ -14,7 +14,6 @@ import { gsap } from 'gsap'
  * 6. Fix ease for rotations on page 3 so it doesn't happen late.
  * 7. [Done] Change break out so it's it breaks apart on x as well as z. And simpify group rotation.
  * 8. Fix edges on matrix/infill texture.
- * 
  */
 
 /**
@@ -31,6 +30,7 @@ const objectZ = -0.19
 const alColor = 0x273561
 const hoverHeight = 1
 const hoverDepth = 2
+const panelWidth = 2.42
 
 // const cameraX = 0
 // const cameraY = 0
@@ -195,29 +195,29 @@ const rOnChange = ()=>{
 }
 
 const cutout1 = new THREE.Mesh(    
-    panelGeometry(2/3, 2.1, .2, 528, 128, 0, zfn(0,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(0,0,2/3,2.1)),
     sideMaterial
 )
-cutout1.position.set(objectX-2/3,objectY,objectZ)
+cutout1.position.set(objectX-panelWidth/3,objectY,objectZ)
 
 const cutout2 = new THREE.Mesh(    
-    panelGeometry(2/3, 2.1, .2, 528, 128, 0, zfn(2/3,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(2/3,0,2/3,2.1)),
     material
 )
 
 const cutout3 = new THREE.Mesh(    
-    panelGeometry(2/3, 2.1, .2, 528, 128, 0, zfn(4/3,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(4/3,0,2/3,2.1)),
     sideMaterial
 )
-cutout3.position.set(objectX+2/3,objectY,objectZ)
+cutout3.position.set(objectX+panelWidth/3,objectY,objectZ)
 
 const infillCutout = new THREE.Mesh(    
-    panelGeometry(2/3, 2.1, .2, 528, 128, 13, zfn(2/3,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 13.1, zfn(2/3,0,2/3,2.1)),
     infillMat
 )
 
 const matrixCutout = new THREE.Mesh(    
-    panelGeometry(2/3, 2.1, .2, 528, 128, 12, zfn(2/3,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 12.55, zfn(2/3,0,2/3,2.1)),
     matrixMat
 )
 
@@ -418,9 +418,9 @@ const page1Transition=()=>{
     gsap.to(camera.position, {x:cameraX, y:cameraY, z:cameraZ, duration:.25})
     gsap.to(floorMaterial, {opacity:0, duration:.25})
     gsap.to(windowMaterial, {opacity:0, duration:.25})
-    gsap.to(cutout1.position, {x:objectX-2/3, y:objectY, z:objectZ, duration: .25})
+    gsap.to(cutout1.position, {x:objectX-panelWidth/3, y:objectY, z:objectZ, duration: .25})
     gsap.to(cutout2Group.position, {x:objectX, y:objectY, z:objectZ, duration: .25})
-    gsap.to(cutout3.position, {x:objectX+2/3, y:objectY, z:objectZ, duration: .25})
+    gsap.to(cutout3.position, {x:objectX+panelWidth/3, y:objectY, z:objectZ, duration: .25})
     gsap.to(cutout1.rotation, {x:0, y:0, z:0, duration: page3Duration})
     gsap.to(cutout2Group.rotation, {x:0, y:0, z:0, duration: page3Duration})
     gsap.to(cutout3.rotation, {x:0, y:0, z:0, duration: page3Duration})
@@ -434,9 +434,9 @@ const page2Transition=()=>{
     gsap.to(camera.position, {x:page2Camera.x, y:page2Camera.y, z:page2Camera.z, duration:page2Duration, ease:page2Ease})
     gsap.to(floorMaterial, {opacity:1, duration:page2Duration, ease:page2Ease})
     gsap.to(windowMaterial, {opacity:.5, duration:page2Duration, ease:page2Ease})
-    gsap.to(cutout1.position, {x:objectX-2/3, y:objectY, z:objectZ, duration: page2Duration})
+    gsap.to(cutout1.position, {x:objectX-panelWidth/3, y:objectY, z:objectZ, duration: page2Duration})
     gsap.to(cutout2Group.position, {x:objectX, y:objectY, z:objectZ, duration: page2Duration})
-    gsap.to(cutout3.position, {x:objectX+2/3, y:objectY, z:objectZ, duration: page2Duration})
+    gsap.to(cutout3.position, {x:objectX+panelWidth/3, y:objectY, z:objectZ, duration: page2Duration})
     gsap.to(cutout1.rotation, {x:0, y:0, z:0, duration: page3Duration})
     gsap.to(cutout2Group.rotation, {x:0, y:0, z:0, duration: page3Duration})
     gsap.to(cutout3.rotation, {x:0, y:0, z:0, duration: page3Duration})
