@@ -13,7 +13,7 @@ import { gsap } from 'gsap'
  * 5. Get rid of x tilt on page 3
  * 6. Fix ease for rotations on page 3 so it doesn't happen late.
  * 7. [Done] Change break out so it's it breaks apart on x as well as z. And simpify group rotation.
- * 8. Fix edges on matrix/infill texture.
+ * 8. [Done] Fix edges on matrix/infill texture.
  */
 
 /**
@@ -448,11 +448,11 @@ const rotEase = x => Math.pow(x, 2)
 const page3Transition=()=>{
     gsap.to(camera.position, {x:0, y:.2, z:8, duration:page3Duration, ease:page2Ease})
     gsap.to(cutout1.position, {x:-2.5, y:hoverHeight, z:hoverDepth, duration: page3Duration})
-    gsap.to(cutout1.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page3Duration, ease:rotEase})
+    gsap.to(cutout1.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page3Duration})
     gsap.to(cutout2Group.position, {x: 0, y:hoverHeight, z:hoverDepth, duration: page3Duration})
-    gsap.to(cutout2Group.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page3Duration, ease:rotEase})
+    gsap.to(cutout2Group.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page3Duration})
     gsap.to(cutout3.position, {x: 2.5, y:hoverHeight, z:hoverDepth, duration: page3Duration})
-    gsap.to(cutout3.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page3Duration, ease:rotEase})
+    gsap.to(cutout3.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page3Duration})
     gsap.to(floorMaterial, {opacity:0, duration:page3Duration, ease:page2Ease})
     gsap.to(windowMaterial, {opacity:0, duration:page3Duration, ease:page2Ease})
     gsap.to(matrixMat, {opacity:0, duration:page4Duration, ease:page3Duration})
@@ -461,9 +461,9 @@ const page3Transition=()=>{
     gsap.to(cutout2.position, {z:0, duration:page4Duration, ease:page4Duration})
     gsap.to(matrixCutout.position, {z:0, duration:page4Duration, ease:page4Duration})
 
-    gsap.to(cutout2.rotation, {x:0, y:0, z:0, duration: page4Duration, ease:rotEase})
-    gsap.to(infillCutout.rotation, {x:0, y:0, z:0, duration: page4Duration, ease:rotEase})
-    gsap.to(matrixCutout.rotation, {x:0, y:0, z:0, duration: page4Duration, ease:rotEase})
+    gsap.to(cutout2.rotation, {x:0, y:0, z:0, duration: page4Duration})
+    gsap.to(infillCutout.rotation, {x:0, y:0, z:0, duration: page4Duration})
+    gsap.to(matrixCutout.rotation, {x:0, y:0, z:0, duration: page4Duration})
     gsap.to(cutout2.position, {x:0, z:0, duration:page4Duration})
     gsap.to(matrixCutout.position, {x:0, z:0, duration:page4Duration})
 }
@@ -476,10 +476,10 @@ const easeOut = x => 1 - Math.pow(1-x, 2)
 const page4Transition=()=>{
     gsap.to(camera.position, {x:0, y:.2, z:8, duration:page4Duration, ease:page2Ease})
     gsap.to(cutout1.position, {x:-2.5, y:hoverHeight, z:hoverDepth, duration: page4Duration})
-    gsap.to(cutout1.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration, ease:rotEase})
+    gsap.to(cutout1.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration})
     gsap.to(cutout2Group.position, {x: 0, y:hoverHeight, z:hoverDepth, duration: page4Duration})
     gsap.to(cutout3.position, {x: 2.5, y:hoverHeight, z:hoverDepth, duration: page4Duration})
-    gsap.to(cutout3.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration, ease:rotEase})
+    gsap.to(cutout3.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration})
     gsap.to(floorMaterial, {opacity:0, duration:page4Duration, ease:opInEase})
     gsap.to(windowMaterial, {opacity:0, duration:page4Duration, ease:opInEase})
     gsap.to(sideMaterial, {opacity:0, duration:page4Duration/2, ease:opInEase})
