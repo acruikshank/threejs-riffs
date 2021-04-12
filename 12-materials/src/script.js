@@ -6,8 +6,15 @@ import { gsap } from 'gsap'
 
 /**
  * TODO:
- * 6. Create infill texture and use it for infill cutout
- * 7. Push
+ * 1. Add page 0
+ * 2. Add page 5 with robot
+ * 3. Color correct hemisphere light
+ * 4. Page 1-2 transition is fast
+ * 5. Get rid of x tilt on page 3
+ * 6. Fix ease for rotations on page 3 so it doesn't happen late.
+ * 7. [Done] Change break out so it's it breaks apart on x as well as z. And simpify group rotation.
+ * 8. Fix edges on matrix/infill texture.
+ * 
  */
 
 /**
@@ -179,7 +186,7 @@ const zfn = (tx,ty,w,h) => (x,y) => {
     return .015*Math.exp(1-.8*r)*Math.sin(9*Math.PI*Math.pow(r,.75))
 }
 
-const rotation = {x: 0.556, y: .504, z: 0}
+const rotation = {x: 0.244, y: .296, z: 0}
 const rotGui = gui.addFolder('rotation')
 const rOnChange = ()=>{
     cutout1.rotation.set(rotation.x, rotation.y, rotation.z)
@@ -462,8 +469,10 @@ const page3Transition=()=>{
 }
 gui.add({page3: page3Transition}, 'page3')
 
-const page4Duration = .75
+const page4Duration = 1.5
 const opInEase = x => 1-Math.pow(1-x, 2)
+const easeIn = x => Math.pow(x, 2)
+const easeOut = x => 1 - Math.pow(1-x, 2)
 const page4Transition=()=>{
     gsap.to(camera.position, {x:0, y:.2, z:8, duration:page4Duration, ease:page2Ease})
     gsap.to(cutout1.position, {x:-2.5, y:hoverHeight, z:hoverDepth, duration: page4Duration})
@@ -473,21 +482,22 @@ const page4Transition=()=>{
     gsap.to(cutout3.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration, ease:rotEase})
     gsap.to(floorMaterial, {opacity:0, duration:page4Duration, ease:opInEase})
     gsap.to(windowMaterial, {opacity:0, duration:page4Duration, ease:opInEase})
-    gsap.to(sideMaterial, {opacity:0, duration:page4Duration, ease:opInEase})
+    gsap.to(sideMaterial, {opacity:0, duration:page4Duration/2, ease:opInEase})
 
-    gsap.to(cutout2Group.rotation, {x:.785, y:rotation.y, z:rotation.z, duration: page4Duration})
-    gsap.to(matrixMat, {opacity:1, duration:page4Duration, ease:opInEase})
-    gsap.to(infillMat, {opacity:1, duration:page4Duration, ease:opInEase})
-    gsap.to(cutout2.position, {z:.75, duration:page4Duration})
-    gsap.to(matrixCutout.position, {z:-.75, duration:page4Duration, onComplete: page4Transition2})
+    gsap.to(matrixMat, {opacity:1, duration:page4Duration/4, ease:opInEase})
+    gsap.to(infillMat, {opacity:1, duration:page4Duration/4, ease:opInEase})
+
+    gsap.to(cutout2Group.rotation, {x:0, y:0, z:0, duration: page4Duration/2})
+    gsap.to(cutout2.position, {x: .75, z:.75, duration:page4Duration/2})
+    gsap.to(matrixCutout.position, {x: -.75, z:-.75, duration:page4Duration/2, onComplete: page4Transition2})
 }
 const page4Transition2=()=>{
-    gsap.to(cutout2Group.rotation, {x:0, y:0, z:0, duration: page4Duration, ease:page2Ease})
-    gsap.to(cutout2.position, {x:2.5, z:0, duration:page4Duration, ease:page2Ease})
-    gsap.to(matrixCutout.position, {x:-2.5, z:-.75, duration:page4Duration, ease:page2Ease})
-    gsap.to(cutout2.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration, ease:page2Ease})
-    gsap.to(infillCutout.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration, ease:page2Ease})
-    gsap.to(matrixCutout.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration, ease:page2Ease})
+    gsap.to(cutout2.position, {x:2.5, z:0, duration:page4Duration/2})
+    gsap.to(matrixCutout.position, {x:-2.5, z:-.75, duration:page4Duration/2})
+
+    gsap.to(cutout2.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration/2})
+    gsap.to(infillCutout.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration/2})
+    gsap.to(matrixCutout.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page4Duration/2})
 }
 gui.add({page4: page4Transition}, 'page4')
 
