@@ -31,6 +31,7 @@ const alColor = 0x273561
 const hoverHeight = 1
 const hoverDepth = 2
 const panelWidth = 2.42
+const page0ZOffset = 1.3
 
 // const cameraX = 0
 // const cameraY = 0
@@ -198,7 +199,7 @@ const cutout1 = new THREE.Mesh(
     panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(0,0,2/3,2.1)),
     sideMaterial
 )
-cutout1.position.set(objectX-panelWidth/3,objectY,objectZ)
+cutout1.position.set(objectX-panelWidth/3,objectY,objectZ - page0ZOffset)
 
 const cutout2 = new THREE.Mesh(    
     panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(2/3,0,2/3,2.1)),
@@ -209,7 +210,7 @@ const cutout3 = new THREE.Mesh(
     panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(4/3,0,2/3,2.1)),
     sideMaterial
 )
-cutout3.position.set(objectX+panelWidth/3,objectY,objectZ)
+cutout3.position.set(objectX+panelWidth/3,objectY,objectZ - page0ZOffset)
 
 const infillCutout = new THREE.Mesh(    
     panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 13.1, zfn(2/3,0,2/3,2.1)),
@@ -229,11 +230,15 @@ floor2.position.set(0, 0, -.75)
 const floor3 = new THREE.Mesh(floorGeometry, floorMaterial)
 floor3.position.set(0, -1.05, -.75)
 
+const buildingGroup = new THREE.Group()
+buildingGroup.visable = false
+buildingGroup.add(floor1, floor2, floor3)
+
 const windowGeometry = new THREE.BoxBufferGeometry(.49, 1, .02)
 Array(12).fill().forEach((_,i)=>Array(2).fill().forEach((_,j) => {
     const window = new THREE.Mesh(windowGeometry, windowMaterial)
     window.position.set(-2.75 + .5*i, -.5+j, -.3)
-    scene.add(window)
+    buildingGroup.add(window)
 }))
 
 const sectionGeometry = new THREE.BoxBufferGeometry(2/3, 2, .3)
@@ -243,10 +248,10 @@ const cutout2Group = new THREE.Group();
 cutout2Group.add(cutout2)
 cutout2Group.add(infillCutout)
 cutout2Group.add(matrixCutout)
-cutout2Group.position.set(objectX,objectY,objectZ)
+cutout2Group.position.set(objectX,objectY,objectZ - page0ZOffset)
 
 // scene.add(sphere, plane, torus)
-scene.add(cutout1, cutout2Group, cutout3, floor1, floor2, floor3)
+scene.add(cutout1, cutout2Group, cutout3, buildingGroup)
 
 /**
  * Lights
@@ -414,13 +419,24 @@ page2CameraGui.add(page2Camera,'x',-3,3,.01).onChange(()=>camera.position.x = pa
 page2CameraGui.add(page2Camera,'y',-3,3,.01).onChange(()=>camera.position.y = page2Camera.y)
 page2CameraGui.add(page2Camera,'z',0,6,.01).onChange(()=>camera.position.z = page2Camera.z)
 
+const page1Duration = 1
+
+const page0Transition=()=>{
+    buildingGroup.visible = false
+    gsap.to(cutout1.position, {x:objectX-panelWidth/3, y:objectY, z:objectZ - page0ZOffset, duration: page1Duration})
+    gsap.to(cutout2Group.position, {x:objectX, y:objectY, z:objectZ - page0ZOffset, duration: page1Duration})
+    gsap.to(cutout3.position, {x:objectX+panelWidth/3, y:objectY, z:objectZ - page0ZOffset, duration: page1Duration})
+}
+gui.add({page0: page0Transition}, 'page0')
+
 const page1Transition=()=>{
-    gsap.to(camera.position, {x:cameraX, y:cameraY, z:cameraZ, duration:.25})
-    gsap.to(floorMaterial, {opacity:0, duration:.25})
-    gsap.to(windowMaterial, {opacity:0, duration:.25})
-    gsap.to(cutout1.position, {x:objectX-panelWidth/3, y:objectY, z:objectZ, duration: .25})
-    gsap.to(cutout2Group.position, {x:objectX, y:objectY, z:objectZ, duration: .25})
-    gsap.to(cutout3.position, {x:objectX+panelWidth/3, y:objectY, z:objectZ, duration: .25})
+    buildingGroup.visible = false
+    gsap.to(camera.position, {x:cameraX, y:cameraY, z:cameraZ, duration:page1Duration})
+    gsap.to(floorMaterial, {opacity:0, duration:page1Duration})
+    gsap.to(windowMaterial, {opacity:0, duration:page1Duration})
+    gsap.to(cutout1.position, {x:objectX-panelWidth/3, y:objectY, z:objectZ, duration: page1Duration})
+    gsap.to(cutout2Group.position, {x:objectX, y:objectY, z:objectZ, duration: page1Duration})
+    gsap.to(cutout3.position, {x:objectX+panelWidth/3, y:objectY, z:objectZ, duration: page1Duration})
     gsap.to(cutout1.rotation, {x:0, y:0, z:0, duration: page3Duration})
     gsap.to(cutout2Group.rotation, {x:0, y:0, z:0, duration: page3Duration})
     gsap.to(cutout3.rotation, {x:0, y:0, z:0, duration: page3Duration})
@@ -429,8 +445,9 @@ gui.add({page1: page1Transition}, 'page1')
 
 const page2EaseExp = 2
 const page2Ease = x=>x<.5?.5*Math.pow(2*x,page2EaseExp):1-.5*Math.pow(2-2*x, page2EaseExp)
-const page2Duration = 1.2
+const page2Duration = 3
 const page2Transition=()=>{
+    buildingGroup.visible = true
     gsap.to(camera.position, {x:page2Camera.x, y:page2Camera.y, z:page2Camera.z, duration:page2Duration, ease:page2Ease})
     gsap.to(floorMaterial, {opacity:1, duration:page2Duration, ease:page2Ease})
     gsap.to(windowMaterial, {opacity:.5, duration:page2Duration, ease:page2Ease})
@@ -528,3 +545,4 @@ const tick = () =>
 }
 
 tick()
+page1Transition()
