@@ -10,8 +10,8 @@ import { gsap } from 'gsap'
  * 2. Add page 5 with robot
  * 3. Color correct hemisphere light
  * 4. Page 1-2 transition is fast
- * 5. Get rid of x tilt on page 3
- * 6. Fix ease for rotations on page 3 so it doesn't happen late.
+ * 5. [Done] Get rid of x tilt on page 3
+ * 6. [Done] Fix ease for rotations on page 3 so it doesn't happen late.
  * 7. [Done] Change break out so it's it breaks apart on x as well as z. And simpify group rotation.
  * 8. [Done] Fix edges on matrix/infill texture.
  */
@@ -264,7 +264,7 @@ scene.add(ambientLight)
 // pointLight.position.z = 4
 // scene.add(pointLight)
 
-const hemiLight = new THREE.HemisphereLight( 0x1f2126, 0xcbbc8f, 1 );
+const hemiLight = new THREE.HemisphereLight( 0x313641, 0xf2f2f2, 1 );
 const hemiFolder = gui.addFolder("hemi light")
 hemiFolder.addColor({sky: hemiLight.color.getHex()}, "sky").onChange((c)=>hemiLight.color = new THREE.Color(c))
 hemiFolder.addColor({ground: hemiLight.groundColor.getHex()}, "ground").onChange((c)=>hemiLight.groundColor = new THREE.Color(c))
