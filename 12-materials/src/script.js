@@ -3,13 +3,16 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { gsap } from 'gsap'
+import {noise, noiseSeed} from '@chriscourses/perlin-noise'
+noiseSeed(43)
 
 /**
+ * kr quantech ultra 120
  * TODO:
- * 1. Add page 0
+ * 1. [Done] Add page 0
  * 2. Add page 5 with robot
- * 3. Color correct hemisphere light
- * 4. Page 1-2 transition is fast
+ * 3. [Done] Color correct hemisphere light
+ * 4. [Done] Page 1-2 transition is fast
  * 5. [Done] Get rid of x tilt on page 3
  * 6. [Done] Fix ease for rotations on page 3 so it doesn't happen late.
  * 7. [Done] Change break out so it's it breaks apart on x as well as z. And simpify group rotation.
@@ -20,9 +23,9 @@ import { gsap } from 'gsap'
  * Debug
  */
 const gui = new dat.GUI()
-const matColor = 0x484848
-const metalness = .7241
-const roughness = .6699
+const matColor = 0x383838
+const metalness = .8434
+const roughness = .5
 const displacement = .473
 const objectX = 0
 const objectY = 0
@@ -42,7 +45,7 @@ const cameraY = -1.19
 const cameraZ = .14
 
 const camera2X = -3.549
-const camera2Y = 1.1968
+const camera2Y = 0.46
 const camera2Z = 4.5758
 
 const floorColor = 0xaaaaaa
@@ -91,6 +94,7 @@ const panelGeometry = (w, h, d, M, N, uvScale, zfn) => {
     for (let j=0; j<N; j++) for (let i=0; i<M; i++) 
         vertices.push(lerp(l,r,i/(M-1)), lerp(b,t,j/(N-1)), f + zfn(i/(M-1), j/(N-1)))
     const indices = []
+
     indices.push(0, N, M+N, 0, M+N, M+2*N)  // back rectangle
     const so = 2*(M+N)
     for (let i=0; i<N-1; i++) indices.push(i, so+i*M, so+(i+1)*M, i, so+(i+1)*M, i+1)
@@ -103,6 +107,21 @@ const panelGeometry = (w, h, d, M, N, uvScale, zfn) => {
     const geometry = new THREE.BufferGeometry();
     geometry.setIndex(indices)
     geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+
+    // const normals = []
+    // for (let i=0; i<N; i++) normals.push(-1,0,0)
+    // for (let i=0; i<M; i++) normals.push(0,1,0)
+    // for (let i=0; i<N; i++) normals.push(1,0,0)
+    // for (let i=0; i<M; i++) normals.push(0,-1,0)
+    // for (let j=0; j<N; j++) for (let i=0; i<M; i++) {
+    //     const x = i/(M-1), y = j/(N-1), d=.00001
+    //     const center = zfn(x,y)
+    //     const tangent = new THREE.Vector3(d, 0, zfn(x+d,y)-center)
+    //     const bitangent = new THREE.Vector3(0, d, zfn(x,y+d)-center)
+    //     const n = tangent.cross(bitangent).normalize()
+    //     normals.push(n.x, n.y, n.z)
+    // }
+    // geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
 
     if (uvScale > 0) {
         const uv = []
@@ -122,13 +141,50 @@ const panelGeometry = (w, h, d, M, N, uvScale, zfn) => {
     return geometry
 }
 
+const fillet = (offset, r) => {
+    const d = 1 - 2*offset, theta = Math.atan2(1,d)
+    const bisect = (Math.PI-theta)/2, proj = r / Math.tan(bisect)
+    const x1 = offset - proj, x2 = offset + proj * Math.cos(theta), x3=1-x2, x4=1-x1
+    return x => {
+        if (x < x1) return 0
+        if (x < x2) return r - Math.sqrt(r*r - (x1-x)*(x1-x))
+        if (x < x3) return (x - offset) / d
+        if (x < x4) return 1 - r + Math.sqrt(r*r - (x4-x)*(x4-x))
+        return 1
+    }
+}
+
+let calls = 0
+
+const fil = fillet(.22, .3)
+const offsetx = 32.5, offsety = 44.5, nfreq = .1, nscale = 320
+const relief = (x, y) => {
+    calls++
+    const x_1 = 80*x - 120
+    const y_1 = 200*y - 80
+    const x_2 = x_1 + nscale*noise(offsetx+nfreq*x, offsety+nfreq*y)
+    const y_2 = y_1 + nscale*noise(offsety+nfreq*x, offsety+nfreq*y)
+
+    const r = Math.sqrt(x_2*x_2 + y_2*y_2)
+    const t = Math.atan2(y_2,x_2) + Math.PI
+
+    const r_ = Math.PI/2
+    const t_ = 2*((t+Math.PI/4)%(Math.PI/2) - Math.PI/4)
+    const h = Math.max(0, r*Math.sqrt(r_*r_ - t_*t_) - 40)
+    return .05*fil((.5 + .5*Math.cos(.05*h)))
+}
+  
+
 /**
  * Materials
  */
 
 const material = new THREE.MeshStandardMaterial({color: matColor})
+// const material = new THREE.MeshNormalMaterial()
 material.metalness = metalness
 material.roughness = roughness
+// material.wireframe = true
+// material.normalScale = 10
 gui.addColor({matColor: material.color.getHex()}, 'matColor')
     .onChange((c)=>material.color.setHex(c))
 gui.add(material, 'metalness').min(0).max(1).step(.0001)
@@ -139,6 +195,8 @@ sideMaterial.transparent = true
 sideMaterial.metalness = metalness
 sideMaterial.roughness = roughness
 sideMaterial.opacity = 1
+
+const side2Material = sideMaterial.clone()
 
 const matrixMat = new THREE.MeshStandardMaterial({color: 0x999999})
 matrixMat.side = THREE.DoubleSide
@@ -156,17 +214,19 @@ infillMat.metalness = 0
 infillMat.roughness = 1
 infillMat.opacity = 0
 
-const floorMaterial = new THREE.MeshPhongMaterial({color: 0x1d1f24})
+const floorMaterial = new THREE.MeshStandardMaterial({color: 0x111111})
 const floorGui = gui.addFolder('floor')
-floorGui.addColor({floorColor: material.color.getHex()}, 'floorColor')
+floorGui.addColor({floorColor: floorMaterial.color.getHex()}, 'floorColor')
     .onChange((c)=>floorMaterial.color.setHex(c))
-floorMaterial.emissive = new THREE.Color(0x1a1a1a)
-floorMaterial.transparent = true
+floorGui.add(floorMaterial, 'metalness').min(0).max(1).step(.0001)
+floorGui.add(floorMaterial, 'roughness').min(0).max(1).step(.0001)
+// floorMaterial.emissive = new THREE.Color(0x1a1a1a)
 floorMaterial.opacity = 0
+floorMaterial.transparent = true
 
 const windowMaterial = new THREE.MeshStandardMaterial({color: windowColor})
 const windowGui = gui.addFolder('window')
-windowGui.addColor({windowColor: material.color.getHex()}, 'windowColor')
+windowGui.addColor({windowColor: windowMaterial.color.getHex()}, 'windowColor')
     .onChange((c)=>windowMaterial.color.setHex(c))
 windowMaterial.metalness = 0.4
 windowMaterial.roughness = 0.3
@@ -175,16 +235,13 @@ windowMaterial.opacity = 0
 windowGui.add(windowMaterial, 'metalness').min(0).max(1).step(.0001)
 windowGui.add(windowMaterial, 'roughness').min(0).max(1).step(.0001)
 
-
 /**
  * Objects
  */
 
+const startObjects = new Date();
 const zfn = (tx,ty,w,h) => (x,y) => {
-    const c = .5
-    const xp = tx + x*w, yp = ty + y*h
-    const dx = xp-1.9, dy = yp-.5, r = Math.sqrt(dx*dx + dy*dy)
-    return .015*Math.exp(1-.8*r)*Math.sin(9*Math.PI*Math.pow(r,.75))
+    return relief(tx + x*w, ty + y*h)
 }
 
 const rotation = {x: 0.244, y: .296, z: 0}
@@ -196,48 +253,62 @@ const rOnChange = ()=>{
 }
 
 const cutout1 = new THREE.Mesh(    
-    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(0,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 512, 256, 0, zfn(-0.666,-1,2/3,2.1)),
     sideMaterial
 )
 cutout1.position.set(objectX-panelWidth/3,objectY,objectZ - page0ZOffset)
 
 const cutout2 = new THREE.Mesh(    
-    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(2/3,0,2/3,2.1)),
+    // panelGeometry(panelWidth/3, 2.1, .2, 512, 128, 0, zfn(-3,-1,6,2)),
+    panelGeometry(panelWidth/3, 2.1, .2, 512, 256, 0, zfn(-0,-1,2/3,2.1)),
     material
 )
 
 const cutout3 = new THREE.Mesh(    
-    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 0, zfn(4/3,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 512, 256, 0, zfn(0.666,-1,2/3,2.1)),
     sideMaterial
 )
 cutout3.position.set(objectX+panelWidth/3,objectY,objectZ - page0ZOffset)
 
+const gap = .5
+const cutout4 = new THREE.Mesh(    
+    panelGeometry(panelWidth, 2.1, .2, 256, 256, 0, zfn(-2.666-gap,-1,2,2.1)),
+    side2Material
+)
+cutout4.position.set(objectX-panelWidth-gap,objectY,objectZ)
+
+const cutout5 = new THREE.Mesh(    
+    panelGeometry(panelWidth, 2.1, .2, 256, 256, 0, zfn(1.666+gap,-1,2,2.1)),
+    side2Material
+)
+cutout5.position.set(objectX+panelWidth+gap,objectY,objectZ)
+
 const infillCutout = new THREE.Mesh(    
-    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 13.1, zfn(2/3,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 128, 128, 13.1, zfn(-0,-1,2/3,2.1)),
     infillMat
 )
 
 const matrixCutout = new THREE.Mesh(    
-    panelGeometry(panelWidth/3, 2.1, .2, 528, 128, 12.55, zfn(2/3,0,2/3,2.1)),
+    panelGeometry(panelWidth/3, 2.1, .2, 128, 128, 12.55, zfn(-0,-1,2/3,2.1)),
     matrixMat
 )
 
-const floorGeometry = new THREE.BoxBufferGeometry(6, .075, 1)
+const floorGeometry = new THREE.BoxBufferGeometry(12, .075, 1)
 const floor1 = new THREE.Mesh(floorGeometry, floorMaterial)
 floor1.position.set(0, 1.05, -.75)
-const floor2 = new THREE.Mesh(floorGeometry, floorMaterial)
-floor2.position.set(0, 0, -.75)
+// const floor2 = new THREE.Mesh(floorGeometry, floorMaterial)
+// floor2.position.set(0, 0, -.85)
 const floor3 = new THREE.Mesh(floorGeometry, floorMaterial)
 floor3.position.set(0, -1.05, -.75)
 
 const buildingGroup = new THREE.Group()
 buildingGroup.visable = false
-buildingGroup.add(floor1, floor2, floor3)
+buildingGroup.add(floor1, floor3, cutout4, cutout5)
 
 const windowGeometry = new THREE.BoxBufferGeometry(.49, 1, .02)
-Array(12).fill().forEach((_,i)=>Array(2).fill().forEach((_,j) => {
+Array(24).fill().forEach((_,i)=>Array(2).fill().forEach((_,j) => {
     const window = new THREE.Mesh(windowGeometry, windowMaterial)
-    window.position.set(-2.75 + .5*i, -.5+j, -.3)
+    window.position.set(-5.5 + .5*i, -.5+j, -.3)
     buildingGroup.add(window)
 }))
 
@@ -252,6 +323,7 @@ cutout2Group.position.set(objectX,objectY,objectZ - page0ZOffset)
 
 // scene.add(sphere, plane, torus)
 scene.add(cutout1, cutout2Group, cutout3, buildingGroup)
+console.log("CALLS", calls, (new Date().getTime()) - startObjects.getTime())
 
 /**
  * Lights
@@ -341,69 +413,6 @@ renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor(0x1f2126)
 
-/**
- * Effects
- */
-
-/*
-
-const renderPass = new RenderPass( scene, camera );
-
-const bokehPass = new BokehPass( scene, camera, {
-    focus: 1.0,
-    aperture: 0.025,
-    maxblur: 0.01,
-
-    width: sizes.width,
-    height: sizes.height
-} );
-
-const composer = new EffectComposer( renderer );
-
-composer.addPass( renderPass );
-composer.addPass( bokehPass );
-
-const postprocessing = {};
-postprocessing.composer = composer;
-postprocessing.bokeh = bokehPass;
-
-const effectController = {
-    focus: 500.0,
-    aperture: 5,
-    maxblur: 0.01
-};
-
-const matChanger = function ( ) {
-    postprocessing.bokeh.uniforms[ "focus" ].value = effectController.focus;
-    postprocessing.bokeh.uniforms[ "aperture" ].value = effectController.aperture * 0.00001;
-    postprocessing.bokeh.uniforms[ "maxblur" ].value = effectController.maxblur;
-};
-
-const dofGui = gui.addFolder('dof');
-dofGui.add( effectController, "focus", 10.0, 3000.0, 10 ).onChange( matChanger );
-dofGui.add( effectController, "aperture", 0, 10, 0.1 ).onChange( matChanger );
-dofGui.add( effectController, "maxblur", 0.0, 0.01, 0.001 ).onChange( matChanger );
-dofGui.close();
-
-matChanger();
-
-const ssaoPass = new SSAOPass( scene, camera, sizes.width, sizes.height );
-ssaoPass.kernelRadius = 16;
-composer.addPass( ssaoPass );
-
-const ssaoGui = gui.addFolder("ssao")
-ssaoGui.add( ssaoPass, 'output', {
-    'Default': SSAOPass.OUTPUT.Default,
-    'SSAO Only': SSAOPass.OUTPUT.SSAO,
-    'SSAO Only + Blur': SSAOPass.OUTPUT.Blur,
-    'Beauty': SSAOPass.OUTPUT.Beauty,
-    'Depth': SSAOPass.OUTPUT.Depth,
-    'Normal': SSAOPass.OUTPUT.Normal
-} ).onChange( function ( value ) { ssaoPass.output = parseInt( value ); } );
-ssaoGui.add( ssaoPass, 'kernelRadius' ).min( 0 ).max( 32 );
-ssaoGui.add( ssaoPass, 'minDistance' ).min( 0.001 ).max( 0.02 );
-ssaoGui.add( ssaoPass, 'maxDistance' ).min( 0.01 ).max( 0.3 );
-*/
 
 /**
  * Animate
@@ -433,6 +442,7 @@ const page1Transition=()=>{
     buildingGroup.visible = false
     gsap.to(camera.position, {x:cameraX, y:cameraY, z:cameraZ, duration:page1Duration})
     gsap.to(floorMaterial, {opacity:0, duration:page1Duration})
+    gsap.to(side2Material, {opacity:0, duration:page1Duration})
     gsap.to(windowMaterial, {opacity:0, duration:page1Duration})
     gsap.to(cutout1.position, {x:objectX-panelWidth/3, y:objectY, z:objectZ, duration: page1Duration})
     gsap.to(cutout2Group.position, {x:objectX, y:objectY, z:objectZ, duration: page1Duration})
@@ -450,6 +460,7 @@ const page2Transition=()=>{
     buildingGroup.visible = true
     gsap.to(camera.position, {x:page2Camera.x, y:page2Camera.y, z:page2Camera.z, duration:page2Duration, ease:page2Ease})
     gsap.to(floorMaterial, {opacity:1, duration:page2Duration, ease:page2Ease})
+    gsap.to(side2Material, {opacity:1, duration:page2Duration})
     gsap.to(windowMaterial, {opacity:.5, duration:page2Duration, ease:page2Ease})
     gsap.to(cutout1.position, {x:objectX-panelWidth/3, y:objectY, z:objectZ, duration: page2Duration})
     gsap.to(cutout2Group.position, {x:objectX, y:objectY, z:objectZ, duration: page2Duration})
@@ -471,6 +482,7 @@ const page3Transition=()=>{
     gsap.to(cutout3.position, {x: 2.5, y:hoverHeight, z:hoverDepth, duration: page3Duration})
     gsap.to(cutout3.rotation, {x:rotation.x, y:rotation.y, z:rotation.z, duration: page3Duration})
     gsap.to(floorMaterial, {opacity:0, duration:page3Duration, ease:page2Ease})
+    gsap.to(side2Material, {opacity:0, duration:page3Duration})
     gsap.to(windowMaterial, {opacity:0, duration:page3Duration, ease:page2Ease})
     gsap.to(matrixMat, {opacity:0, duration:page4Duration, ease:page3Duration})
     gsap.to(infillMat, {opacity:0, duration:page4Duration, ease:page3Duration})
