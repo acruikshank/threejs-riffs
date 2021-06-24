@@ -20,15 +20,11 @@ const canvas = document.querySelector('canvas.webgl')
 // Scene
 const scene = new THREE.Scene()
 
-// Axis helper
-const axisHelper = new THREE.AxisHelper();
-// scene.add(axisHelper);
-
 /**
  * Textures
  */
 const textureLoader = new THREE.TextureLoader()
-const matcapTexture = textureLoader.load('/textures/matcaps/16.png')
+const matcapTexture = textureLoader.load('./textures/matcaps/16.png')
 const textMaterial = new THREE.MeshMatcapMaterial({matcap: matcapTexture})
 const copy = `
 Carbon Five is a digital product development
@@ -48,7 +44,7 @@ teams. Carbon Five is a digital product development
  */
 const fontLoader = new THREE.FontLoader()
 let text = [];
-fontLoader.load('/fonts/helvetiker_bold.typeface.json', (font) => {
+fontLoader.load('./fonts/helvetiker_bold.typeface.json', (font) => {
     const lineHeight = fontSize*80*font.data.lineHeight/100000
 
     const baseOffset = -2.25*fontScale;
