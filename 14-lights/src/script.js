@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { noise } from 'perlin'
 
-const hsegs = 38, vsegs = 12, steps = 4
+const hsegs = 38, vsegs = 12, steps = 8
 const angle = 2*Math.PI/hsegs
 const radius = .8
 const height = 2
@@ -28,7 +28,7 @@ const ambientLight = new THREE.AmbientLight(0xffffff, .25)
 scene.add(ambientLight)
 
 // const colors = [0xff9900, 0xeeff22, 0x99ff33, 0x22ccff, 0xff22ff]
-const colors = [0xff9900, 0xeeff22, 0xff22ff]
+const colors = [0xffaa33, 0xf2ff66, 0x446688]
 for (let i=0; i<colors.length; i++) {
     const pointLight = new THREE.PointLight(colors[i], 2, 100)
     const theta = i*2*Math.PI/colors.length
@@ -72,9 +72,9 @@ segs.forEach(row=>row.forEach(wedge=>scene.add(wedge)))
 // scene.add(plane2)
 
 const geometry = new THREE.CylinderGeometry( radius*4, radius*4, height, 32 );
-const cyMat = new THREE.MeshStandardMaterial({color: 0x111111})
-cyMat.roughness = 0.8
-cyMat.metalness = 1.2
+const cyMat = new THREE.MeshStandardMaterial({color: 0x020509})
+cyMat.roughness = 0.5
+cyMat.metalness = 0.0
 cyMat.side = THREE.BackSide
 const cylinder = new THREE.Mesh( geometry, cyMat );
 cylinder.position.y = height/2
